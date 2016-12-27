@@ -1,29 +1,33 @@
 import numpy as np
 np.random.seed(2020)
 
-import os
-import glob
+import os, glob, pickle
+import math, random
 import cv2
-import math
-import pickle
 
+from keras.utils import np_utils
 from tqdm import tqdm
 
-# color_type = "grayscale", "rgb"
-def get_im_cv2(path, img_rows, img_cols, color_type="grayscale"):
-    if color_type == "grayscale":
+# limit the number of testing images because we can't handle that much data
+
+im_limit = 5000
+
+
+# colors = 1 for grayscale, 3 for rgb
+def get_im_cv2(path, im_rows, im_cols, colors=1):
+    if colors == 1:
         img = cv2.imread(path, 0)
-    elif color_type == "rgb":
+    elif colors == 3:
         img = cv2.imread(path)
 
-    resized = cv2.resize(img, (img_cols, img_rows))
+    resized = cv2.resize(img, (im_cols, im_rows))
     return resized
 
 
 def get_driver_data():
     driver_dict = dict()
     path = os.path.join('static_data', 'input', 'driver_imgs_list.csv')
-    print('Read drivers data')
+    print('Reading driver data')
     with open(path, 'r') as f:
         for line in f:
             array = line.strip().split(',')
@@ -32,21 +36,21 @@ def get_driver_data():
     return driver_dict
 
 
-def load_train(img_rows, img_cols, color_type="grayscale"):
+def load_train(im_rows, im_cols, colors=1):
+    print 'Reading training images...'
+
     x_train = []
     y_train = []
     driver_id = []
-
     driver_data = get_driver_data()
 
-    print('Read train images')
     for j in range(10):
-        print 'Load folder c{}'.format(j)
+        print 'Loading folder c{}...'.format(j)
         path = os.path.join('static_data', 'input', 'train', 'c' + str(j), '*.jpg')
         files = glob.glob(path)
         for f in tqdm(files):
             base = os.path.basename(f)
-            img = get_im_cv2(f, img_rows, img_cols, color_type)
+            img = get_im_cv2(f, im_rows, im_cols, colors)
             x_train.append(img)
             y_train.append(j)
             driver_id.append(driver_data[base])
@@ -57,15 +61,21 @@ def load_train(img_rows, img_cols, color_type="grayscale"):
     return x_train, y_train, driver_id, unique_drivers
 
 
-def load_test(img_rows, img_cols, color_type="grayscale"):
-    print('Read test images')
+def load_test(im_rows, im_cols, colors=1):
+    print 'Reading testing images...'
+
     path = os.path.join('static_data', 'input', 'test', '*.jpg')
     files = glob.glob(path)
+    random.shuffle(files)
+
     x_test = []
     x_test_id = []
-    for f in tqdm(files):
+
+    for i, f in enumerate(tqdm(files)):
+        if i > im_limit:
+            break
         base = os.path.basename(f)
-        img = get_im_cv2(f, img_rows, img_cols, color_type)
+        img = get_im_cv2(f, im_rows, im_cols, colors)
         x_test.append(img)
         x_test_id.append(base)
 
@@ -89,46 +99,60 @@ def restore_data(path):
 
     return data
 
-def normalize_data(data, color_type, img_rows, img_cols):
+def normalize_data(data, im_rows, im_cols, colors):
     data = np.array(data, dtype=np.uint8)
-    data = train_data.reshape(data.shape[0], color_type, img_rows, img_cols)
+    data = data.reshape(data.shape[0], im_rows, im_cols, colors)
     data = data.astype('float32')
     data /= 255
 
-def read_and_normalize_train_data(img_rows, img_cols, color_type="grayscale", use_cache=True):
-    cache_path = os.path.join('cache', 'train_r_' + str(img_rows) + '_c_' + str(img_cols) + '_t_' + color_type + '.dat')
+    return data
+
+def load_train_data(im_rows, im_cols, colors=1, use_cache=True):
+    cache_path = os.path.join('cache', 'train_r_' + str(im_rows) + '_c_' + str(im_cols) + '_t_' + str(colors) + '.dat')
     if os.path.isfile(cache_path) and use_cache:
         print('Restoring training data from cache...')
         (train_data, train_target, driver_id, unique_drivers) = restore_data(cache_path)
     else:
-        train_data, train_target, driver_id, unique_drivers = load_train(img_rows, img_cols, color_type)
+        train_data, train_target, driver_id, unique_drivers = load_train(im_rows, im_cols, colors)
         cache_data((train_data, train_target, driver_id, unique_drivers), cache_path)
 
-    train_data = normalize_data(train_data, color_type, img_rows, img_cols)
+    train_data = normalize_data(train_data, im_rows, im_cols, colors)
 
     train_target = np.array(train_target, dtype=np.uint8)
     train_target = np_utils.to_categorical(train_target, 10)
 
-    print 'Train shape:'
-    print train_data.shape
+    print ('Train shape:', train_data.shape)
 
     return train_data, train_target, driver_id, unique_drivers
 
 
-def read_and_normalize_test_data(img_rows, img_cols, color_type="grayscale", use_cache=True):
-    cache_path = os.path.join('cache', 'test_r_' + str(img_rows) + '_c_' + str(img_cols) + '_t_' + color_type + '.dat')
+def load_test_data(im_rows, im_cols, colors=1, use_cache=True):
+    cache_path = os.path.join('cache', 'test_r_' + str(im_rows) + '_c_' + str(im_cols) + '_t_' + str(colors) + '.dat')
     if os.path.isfile(cache_path) and use_cache:
         print('Restoring testing from cache...')
         (test_data, test_id) = restore_data(cache_path)
     else:
-        test_data, test_id = load_test(img_rows, img_cols, color_type)
+        test_data, test_id = load_test(im_rows, im_cols, colors)
         cache_data((test_data, test_id), cache_path)
 
-    test_data = normalize_data(test_data, color_type, img_rows, img_cols)
+    test_data = normalize_data(test_data, im_rows, im_cols, colors)
 
-    print 'Test shape:'
-    print test_data.shape
+    print ('Test shape:', test_data.shape)
 
     return test_data, test_id
 
-load_train(299, 299)
+def copy_selected_drivers(train_data, train_target, driver_id, driver_list):
+    data = []
+    target = []
+    index = []
+    driver_set = set(driver_list)
+    for i in range(len(driver_id)):
+        if driver_id[i] in driver_set:
+            data.append(train_data[i])
+            target.append(train_target[i])
+            index.append(i)
+
+    data = np.array(data, dtype=np.float32)
+    target = np.array(target, dtype=np.float32)
+    index = np.array(index, dtype=np.uint32)
+    return data, target, index
