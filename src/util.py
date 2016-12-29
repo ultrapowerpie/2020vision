@@ -10,7 +10,8 @@ from tqdm import tqdm
 
 # limit the number of testing images because we can't handle that much data
 
-im_limit = 5000
+train_limit = 1000
+test_limit = 5000
 
 
 # colors = 1 for grayscale, 3 for rgb
@@ -48,7 +49,10 @@ def load_train(im_rows, im_cols, colors=1):
         print 'Loading folder c{}...'.format(j)
         path = os.path.join('static_data', 'input', 'train', 'c' + str(j), '*.jpg')
         files = glob.glob(path)
-        for f in tqdm(files):
+
+        for i, f in enumerate(tqdm(files)):
+            if i > train_limit:
+                break
             base = os.path.basename(f)
             img = get_im_cv2(f, im_rows, im_cols, colors)
             x_train.append(img)
@@ -72,7 +76,7 @@ def load_test(im_rows, im_cols, colors=1):
     x_test_id = []
 
     for i, f in enumerate(tqdm(files)):
-        if i > im_limit:
+        if i > test_limit:
             break
         base = os.path.basename(f)
         img = get_im_cv2(f, im_rows, im_cols, colors)
@@ -104,6 +108,8 @@ def normalize_data(data, im_rows, im_cols, colors):
     data = data.reshape(data.shape[0], im_rows, im_cols, colors)
     data = data.astype('float32')
     data /= 255
+    data -= 0.5
+    data *= 2.
 
     return data
 

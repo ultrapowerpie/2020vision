@@ -1,9 +1,11 @@
 import alex_net
+import inception_v3_lowres as v3
+import util
 import sys
 
 def main():
-    img_rows, img_cols = 224, 224
-    batch_size         = 32
+    img_rows, img_cols = 79, 79
+    batch_size         = 16
     nb_epoch           = 2
     random_state       = 51
     colors             = 1
@@ -21,7 +23,7 @@ def main():
     unique_list_valid = ['p081']
     x_valid, y_valid, test_index = util.copy_selected_drivers(train_data, train_target, driver_id, unique_list_valid)
 
-    print ('Starting Single Run')
+    print 'Starting Single Run'
     print ('Split train: ', len(x_train), len(y_train))
     print ('Split valid: ', len(x_valid), len(y_valid))
     print ('Train drivers: ', unique_list_train)
@@ -31,6 +33,8 @@ def main():
         model = create_model_v1(img_rows, img_cols, colors)
     elif sys.argv[1] == "alex_v2":
         model = create_model_v2(img_rows, img_cols, colors)
+    elif sys.argv[1] == "inception_v3":
+        model = v3.InceptionV3(include_top=True, weights=None)
 
     model.fit(x_train, y_train, batch_size=batch_size, nb_epoch=nb_epoch, verbose=1, validation_data=(x_valid, y_valid))
 
@@ -61,4 +65,5 @@ def main():
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print "Please enter the net to train"
-    main()
+    else:
+        main()

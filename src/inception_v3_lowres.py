@@ -49,7 +49,7 @@ def conv2d_bn(x, nb_filter, nb_row, nb_col,
     return x
 
 
-def InceptionV3(include_top=True, weights='None',
+def InceptionV3(include_top=False, weights='None',
                 input_tensor=None):
     '''Instantiate the Inception v3 architecture,
     optionally loading weights pre-trained
@@ -79,7 +79,7 @@ def InceptionV3(include_top=True, weights='None',
     # Determine proper input shape
 
     if include_top:
-        input_shape = (299, 299, 1)
+        input_shape = (79, 79, 1)
     else:
         input_shape = (None, None, 1)
 
@@ -93,14 +93,14 @@ def InceptionV3(include_top=True, weights='None',
 
     channel_axis = 3
 
-    x = conv2d_bn(img_input, 32, 3, 3, subsample=(2, 2), border_mode='valid')
+    x = conv2d_bn(img_input, 32, 3, 3, border_mode='valid')
     x = conv2d_bn(x, 32, 3, 3, border_mode='valid')
     x = conv2d_bn(x, 64, 3, 3)
-    x = MaxPooling2D((3, 3), strides=(2, 2))(x)
+    x = MaxPooling2D((3, 3), strides=(1, 1))(x)
 
     x = conv2d_bn(x, 80, 1, 1, border_mode='valid')
     x = conv2d_bn(x, 192, 3, 3, border_mode='valid')
-    x = MaxPooling2D((3, 3), strides=(2, 2))(x)
+    # x = MaxPooling2D((3, 3), strides=(1, 1))(x)
 
     # mixed 0, 1, 2: 35 x 35 x 256
     for i in range(3):
@@ -113,22 +113,20 @@ def InceptionV3(include_top=True, weights='None',
         branch3x3dbl = conv2d_bn(branch3x3dbl, 96, 3, 3)
         branch3x3dbl = conv2d_bn(branch3x3dbl, 96, 3, 3)
 
-        branch_pool = AveragePooling2D(
-            (3, 3), strides=(1, 1), border_mode='same')(x)
+        branch_pool = x
         branch_pool = conv2d_bn(branch_pool, 32, 1, 1)
         x = merge([branch1x1, branch5x5, branch3x3dbl, branch_pool],
                   mode='concat', concat_axis=channel_axis,
                   name='mixed' + str(i))
 
     # mixed 3: 17 x 17 x 768
-    branch3x3 = conv2d_bn(x, 384, 3, 3, subsample=(2, 2), border_mode='valid')
+    branch3x3 = conv2d_bn(x, 384, 3, 3, border_mode='valid')
 
     branch3x3dbl = conv2d_bn(x, 64, 1, 1)
     branch3x3dbl = conv2d_bn(branch3x3dbl, 96, 3, 3)
-    branch3x3dbl = conv2d_bn(branch3x3dbl, 96, 3, 3,
-                             subsample=(2, 2), border_mode='valid')
+    branch3x3dbl = conv2d_bn(branch3x3dbl, 96, 3, 3, border_mode='valid')
 
-    branch_pool = MaxPooling2D((3, 3), strides=(2, 2))(x)
+    branch_pool = conv2d_bn(x, 288, 3, 3, border_mode='valid')
     x = merge([branch3x3, branch3x3dbl, branch_pool],
               mode='concat', concat_axis=channel_axis,
               name='mixed3')
@@ -146,7 +144,7 @@ def InceptionV3(include_top=True, weights='None',
     branch7x7dbl = conv2d_bn(branch7x7dbl, 128, 7, 1)
     branch7x7dbl = conv2d_bn(branch7x7dbl, 192, 1, 7)
 
-    branch_pool = AveragePooling2D((3, 3), strides=(1, 1), border_mode='same')(x)
+    branch_pool = x
     branch_pool = conv2d_bn(branch_pool, 192, 1, 1)
     x = merge([branch1x1, branch7x7, branch7x7dbl, branch_pool],
               mode='concat', concat_axis=channel_axis,
@@ -166,8 +164,7 @@ def InceptionV3(include_top=True, weights='None',
         branch7x7dbl = conv2d_bn(branch7x7dbl, 160, 7, 1)
         branch7x7dbl = conv2d_bn(branch7x7dbl, 192, 1, 7)
 
-        branch_pool = AveragePooling2D(
-            (3, 3), strides=(1, 1), border_mode='same')(x)
+        branch_pool = x
         branch_pool = conv2d_bn(branch_pool, 192, 1, 1)
         x = merge([branch1x1, branch7x7, branch7x7dbl, branch_pool],
                   mode='concat', concat_axis=channel_axis,
@@ -186,7 +183,7 @@ def InceptionV3(include_top=True, weights='None',
     branch7x7dbl = conv2d_bn(branch7x7dbl, 192, 7, 1)
     branch7x7dbl = conv2d_bn(branch7x7dbl, 192, 1, 7)
 
-    branch_pool = AveragePooling2D((3, 3), strides=(1, 1), border_mode='same')(x)
+    branch_pool = x
     branch_pool = conv2d_bn(branch_pool, 192, 1, 1)
     x = merge([branch1x1, branch7x7, branch7x7dbl, branch_pool],
               mode='concat', concat_axis=channel_axis,
@@ -194,16 +191,14 @@ def InceptionV3(include_top=True, weights='None',
 
     # mixed 8: 8 x 8 x 1280
     branch3x3 = conv2d_bn(x, 192, 1, 1)
-    branch3x3 = conv2d_bn(branch3x3, 320, 3, 3,
-                          subsample=(2, 2), border_mode='valid')
+    branch3x3 = conv2d_bn(branch3x3, 320, 3, 3, border_mode='valid')
 
     branch7x7x3 = conv2d_bn(x, 192, 1, 1)
     branch7x7x3 = conv2d_bn(branch7x7x3, 192, 1, 7)
     branch7x7x3 = conv2d_bn(branch7x7x3, 192, 7, 1)
-    branch7x7x3 = conv2d_bn(branch7x7x3, 192, 3, 3,
-                            subsample=(2, 2), border_mode='valid')
+    branch7x7x3 = conv2d_bn(branch7x7x3, 192, 3, 3, border_mode='valid')
 
-    branch_pool = AveragePooling2D((3, 3), strides=(2, 2))(x)
+    branch_pool = conv2d_bn(x, 768, 3, 3, border_mode='valid')
     x = merge([branch3x3, branch7x7x3, branch_pool],
               mode='concat', concat_axis=channel_axis,
               name='mixed8')
@@ -226,8 +221,7 @@ def InceptionV3(include_top=True, weights='None',
         branch3x3dbl = merge([branch3x3dbl_1, branch3x3dbl_2],
                              mode='concat', concat_axis=channel_axis)
 
-        branch_pool = AveragePooling2D(
-            (3, 3), strides=(1, 1), border_mode='same')(x)
+        branch_pool = x
         branch_pool = conv2d_bn(branch_pool, 192, 1, 1)
         x = merge([branch1x1, branch3x3, branch3x3dbl, branch_pool],
                   mode='concat', concat_axis=channel_axis,
@@ -241,45 +235,6 @@ def InceptionV3(include_top=True, weights='None',
 
     # Create model
     model = Model(img_input, x)
-
-    # load weights
-    if weights == 'imagenet':
-        if K.image_dim_ordering() == 'th':
-            if include_top:
-                weights_path = get_file('inception_v3_weights_th_dim_ordering_th_kernels.h5',
-                                        TH_WEIGHTS_PATH,
-                                        cache_subdir='models',
-                                        md5_hash='b3baf3070cc4bf476d43a2ea61b0ca5f')
-            else:
-                weights_path = get_file('inception_v3_weights_th_dim_ordering_th_kernels_notop.h5',
-                                        TH_WEIGHTS_PATH_NO_TOP,
-                                        cache_subdir='models',
-                                        md5_hash='79aaa90ab4372b4593ba3df64e142f05')
-            model.load_weights(weights_path)
-            if K.backend() == 'tensorflow':
-                warnings.warn('You are using the TensorFlow backend, yet you '
-                              'are using the Theano '
-                              'image dimension ordering convention '
-                              '(`image_dim_ordering="th"`). '
-                              'For best performance, set '
-                              '`image_dim_ordering="tf"` in '
-                              'your Keras config '
-                              'at ~/.keras/keras.json.')
-                convert_all_kernels_in_model(model)
-        else:
-            if include_top:
-                weights_path = get_file('inception_v3_weights_tf_dim_ordering_tf_kernels.h5',
-                                        TF_WEIGHTS_PATH,
-                                        cache_subdir='models',
-                                        md5_hash='fe114b3ff2ea4bf891e9353d1bbfb32f')
-            else:
-                weights_path = get_file('inception_v3_weights_tf_dim_ordering_tf_kernels_notop.h5',
-                                        TF_WEIGHTS_PATH_NO_TOP,
-                                        cache_subdir='models',
-                                        md5_hash='2f3609166de1d967d1a481094754f691')
-            model.load_weights(weights_path)
-            if K.backend() == 'theano':
-                convert_all_kernels_in_model(model)
 
     sgd = SGD(lr=0.1, decay=0, momentum=0, nesterov=False)
     model.compile(loss='categorical_crossentropy', optimizer=sgd)

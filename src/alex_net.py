@@ -4,8 +4,6 @@ from keras.layers.convolutional import Convolution2D, MaxPooling2D
 from keras.layers.normalization import BatchNormalization
 from keras.optimizers import SGD
 
-from sklearn.metrics import log_loss
-
 import util
 
 def create_model_v1(img_rows, img_cols, colors=1):
