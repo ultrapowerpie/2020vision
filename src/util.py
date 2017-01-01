@@ -1,17 +1,17 @@
+import os, glob, pickle
+import math, random, cv2
 import numpy as np
 np.random.seed(2020)
 
-import os, glob, pickle
-import math, random
-import cv2
-
 from keras.utils import np_utils
+from keras.models import model_from_json
+from keras.optimizers import SGD
 from tqdm import tqdm
 
 # limit the number of testing images because we can't handle that much data
 
-train_limit = 1000
-test_limit = 5000
+train_limit = 3000
+test_limit = 4999
 
 
 # colors = 1 for grayscale, 3 for rgb
@@ -108,8 +108,6 @@ def normalize_data(data, im_rows, im_cols, colors):
     data = data.reshape(data.shape[0], im_rows, im_cols, colors)
     data = data.astype('float32')
     data /= 255
-    data -= 0.5
-    data *= 2.
 
     return data
 
@@ -127,7 +125,7 @@ def load_train_data(im_rows, im_cols, colors=1, use_cache=True):
     train_target = np.array(train_target, dtype=np.uint8)
     train_target = np_utils.to_categorical(train_target, 10)
 
-    print ('Train shape:', train_data.shape)
+    print 'Train shape: {}'.format(train_data.shape)
 
     return train_data, train_target, driver_id, unique_drivers
 
@@ -147,6 +145,7 @@ def load_test_data(im_rows, im_cols, colors=1, use_cache=True):
 
     return test_data, test_id
 
+
 def copy_selected_drivers(train_data, train_target, driver_id, driver_list):
     data = []
     target = []
@@ -162,3 +161,18 @@ def copy_selected_drivers(train_data, train_target, driver_id, driver_list):
     target = np.array(target, dtype=np.float32)
     index = np.array(index, dtype=np.uint32)
     return data, target, index
+
+
+def save_model(model, name):
+    json_string = model.to_json()
+    open(os.path.join('cache', name+'_architecture.json'), 'w').write(json_string)
+    model.save_weights(os.path.join('cache', name+'_model_weights.h5'), overwrite=True)
+
+
+def read_model():
+    model = model_from_json(open(os.path.join('cache', 'architecture.json')).read())
+    model.load_weights(os.path.join('cache', 'model_weights.h5'))
+
+    sgd = SGD(lr=0.1, decay=1e-6, momentum=0.9, nesterov=True)
+    model.compile(loss='categorical_crossentropy', optimizer=sgd)
+    return model

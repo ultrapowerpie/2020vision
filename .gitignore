@@ -94,3 +94,6 @@ ENV/
 # data
 *.csv
 *.dat
+*.json
+*.h5
+*.zip
