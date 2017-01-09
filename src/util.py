@@ -169,9 +169,9 @@ def save_model(model, name):
     model.save_weights(os.path.join('cache', name+'_model_weights.h5'), overwrite=True)
 
 
-def read_model():
-    model = model_from_json(open(os.path.join('cache', 'architecture.json')).read())
-    model.load_weights(os.path.join('cache', 'model_weights.h5'))
+def read_model(name):
+    model = model_from_json(open(os.path.join('cache', name+'_architecture.json')).read())
+    model.load_weights(os.path.join('cache', name+'_model_weights.h5'))
 
     sgd = SGD(lr=0.1, decay=1e-6, momentum=0.9, nesterov=True)
     model.compile(loss='categorical_crossentropy', optimizer=sgd)

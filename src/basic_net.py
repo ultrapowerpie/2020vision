@@ -36,11 +36,6 @@ def Basic_Net_v1(im_rows, im_cols, colors):
     model.add(Activation('relu'))
     model.add(Dropout(0.5))
 
-    model.add(Convolution2D(128, 3, 3, subsample=(2,2), border_mode='same'))
-    model.add(BatchNormalization())
-    model.add(Activation('relu'))
-    model.add(Dropout(0.5))
-
     model.add(Flatten())
 
     model.add(Dense(256))
@@ -86,12 +81,6 @@ def Basic_Net_v2(im_rows, im_cols, colors):
     model.add(BatchNormalization())
     model.add(Activation('relu'))
     model.add(Dropout(0.5))
-
-    model.add(Convolution2D(128, 3, 3, subsample=(2,2), border_mode='same'))
-    model.add(BatchNormalization())
-    model.add(Activation('relu'))
-    model.add(Dropout(0.5))
-
 
     model.add(Flatten())
 

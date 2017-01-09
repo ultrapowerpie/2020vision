@@ -20,6 +20,14 @@ https://docs.google.com/document/d/1nhJT8y2f3HaJnzlTRZRcVAg9sct1xv9ixvtth-2T_ZM/
 
 # Net structures
 
+VGG_16 - We used the 3x3 convlutional filters from VGG
+
+ResNet - We used residual layers (2-layer skip connections) in the fancy nets
+
+ZFNet - We used the 
+
+Convolution-only Net
+
 Basic_Net:
 
 This network is composed of blocks of 3x3 convolution layers

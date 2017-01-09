@@ -40,7 +40,10 @@ def main():
     print 'Test drivers: {}'.format(drivers_list_valid)
 
     if sys.argv[1] == "load":
-        model = util.read_model()
+        if len(sys.argv < 3):
+            print "Please enter the name of the model to load"
+        else:
+            model = util.read_model(sys.argv[2])
     elif sys.argv[1] == "basic_v1":
         model = basic_net.Basic_Net_v1(im_rows, im_cols, colors)
     elif sys.argv[1] == "basic_v2":
