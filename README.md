@@ -47,3 +47,7 @@ convolution, and may train slightly faster and converge more stablely.
 I was able to train up to 128x128 images on all 4 nets, but Basic_Net_v2 still
 seems to give the best results in terms of top-1 accuracy at around 72% after
 10 epochs.
+
+Using K-Nearest Neighbors (with 5 neighbors), top-1 accuracy for Basic_Net_v2
+increased from 72% to 74.6%. Have not yet tested on Fancy_Net_v2 or for other
+numbers of neighbors.
