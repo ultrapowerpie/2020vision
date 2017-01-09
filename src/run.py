@@ -4,6 +4,7 @@ import sys, random
 import numpy as np
 
 from sklearn.metrics import log_loss
+from sklearn.neighbors import KNeighborsClassifier
 
 random.seed(20)
 
@@ -21,6 +22,7 @@ def main():
     random_state       = 51
     colors             = 1
     validation_size    = 2          # 26 total drivers
+    n_neighbors        = 5          # Number of neighbors for KNN
 
     train_data, train_target, driver_id, _ = util.load_train_data(im_rows,
                                                 im_cols, colors)
@@ -68,6 +70,27 @@ def main():
     top1 /= float(len(y_valid))
     print 'Final log_loss: {}, top 1 accuracy: {}, rows: {} cols: {} epoch: {}'\
             .format(score, top1, im_rows, im_cols, nb_epoch)
+
+
+    # K-Nearest Neighbors
+    interm_layer_model = util.build_interm_model(model)
+    interm_train = interm_layer_model.predict(x_train, batch_size=batch_size, \
+                                                          verbose=1)
+
+    knn = KNeighborsClassifier(n_neighbors=n_neighbors)
+    knn.fit(interm_train, y_train)
+
+    interm_valid = interm_layer_model.predict(x_valid, batch_size=128, verbose=1)
+    knn_predictions = knn.predict(interm_valid)
+
+    knn_score = 0
+    for i in range(len(y_valid)):
+        if np.argmax(y_valid[i]) == np.argmax(knn_predictions[i]):
+            knn_score += 1
+    knn_score /= float(len(y_valid))
+    print 'K Nearest Neighbors accuracy with {} neighbors: {}'\
+          .format(n_neighbors, knn_score)
+
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
