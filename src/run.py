@@ -4,8 +4,6 @@ import sys, random
 import numpy as np
 
 from sklearn.metrics import log_loss
-from keras import backend as K
-from keras.models import Model
 from sklearn.neighbors import KNeighborsClassifier
 
 random.seed(20)
@@ -72,23 +70,24 @@ def main():
 
 
     # K-Nearest Neighbors
-    intermediate_layer_model = Model(input=model.input,
-                                 output=model.layers[-1].output)
-    intermediate_output = intermediate_layer_model.predict(x_train)
+    interm_layer_model = util.build_interm_model(model)
+    interm_train = interm_layer_model.predict(x_train, batch_size=batch_size, \
+                                                          verbose=1)
 
     knn = KNeighborsClassifier(n_neighbors=n_neighbors)
-    knn.fit(intermediate_output, y_train)
+    knn.fit(interm_train, y_train)
 
-    intermediate_x_valid = intermediate_layer_model.predict(x_valid)
-    predictions = knn.predict(intermediate_x_valid)
+    interm_valid = interm_layer_model.predict(x_valid, batch_size=128, verbose=1)
+    knn_predictions = knn.predict(interm_valid)
 
     knn_score = 0
     for i in range(len(y_valid)):
-        if np.argmax(y_valid[i]) == np.argmax(predictions[i]):
+        if np.argmax(y_valid[i]) == np.argmax(knn_predictions[i]):
             knn_score += 1
     knn_score /= float(len(y_valid))
-    print 'K Nearest Neighbors accuracy with {} neighbors: {}'
+    print 'K Nearest Neighbors accuracy with {} neighbors: {}'\
           .format(n_neighbors, knn_score)
+
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
