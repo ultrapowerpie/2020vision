@@ -102,7 +102,7 @@ def Fancy_Net_v2(im_rows, im_cols, colors):
     im_input = Input(shape=(im_rows, im_cols, colors))
 
     channels = int(im_rows/4)
-    iterations = 2
+    iterations = 3
 
     x = _add_conv(im_input, channels, (3, 3), subsample=(2, 2))
 
@@ -114,20 +114,22 @@ def Fancy_Net_v2(im_rows, im_cols, colors):
 
     x = merge([x, residual], mode='sum')
 
-    for i in range(2):
+    channels *= 2
 
-        residual = _add_conv(x, 2*channels, (1, 1), subsample=(2, 2))
+    for i in range(iterations):
+
+        residual = _add_conv(x, channels, (1, 1), subsample=(2, 2))
 
         x = _add_bn_act(x)
-        x = _add_conv_bn_act(x, 2*channels)
-        x = _add_conv(x, 2*channels, (3, 3), subsample=(2, 2))
+        x = _add_conv_bn_act(x, channels)
+        x = _add_conv(x, channels, (3, 3), subsample=(2, 2))
 
         x = merge([x, residual], mode='sum')
 
-        # channels *= 2
+        channels *= 2
 
     x = _add_bn_act(x)
-    x = _add_conv_bn_act(x, 4*channels, subsample=(2, 2))
+    x = _add_conv_bn_act(x, channels, subsample=(2, 2))
 
     x = GlobalAveragePooling2D(name='avg_pool')(x)
     x = Dense(10, activation='softmax', name='predictions')(x)

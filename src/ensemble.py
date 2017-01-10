@@ -2,6 +2,8 @@ import basic_net, fancy_net
 import util
 import sys, random
 import numpy as np
+import tensorflow as tf
+import keras
 
 from sklearn.metrics import log_loss
 
@@ -15,9 +17,9 @@ nb_drivers = len(drivers_list)
 random.shuffle(drivers_list)
 
 def main():
-    im_rows, im_cols   = 64, 64
+    im_rows, im_cols   = 128, 128
     batch_size         = 64
-    nb_epoch           = 10
+    nb_epoch           = 30
     random_state       = 51
     colors             = 1
     validation_size    = 2          # 26 total drivers
@@ -59,7 +61,8 @@ def main():
         elif sys.argv[1] == "fancy_v2":
             models.append(fancy_net.Fancy_Net_v2(im_rows, im_cols, colors))
 
-        if sys.argv[1] != "load":
+        if (sys.argv[1] != "load") or \
+        ((len(sys.argv) > 3) and sys.argv[3] == "train"):
             # shuffle the training data and remove dropout proportion
             x = [x_train[j,:,:,:] for j in range(x_train.shape[0])]
             y = [y_train[j,:] for j in range(y_train.shape[0])]
@@ -70,11 +73,24 @@ def main():
             x = np.asarray(x)
             y = np.asarray(y)
 
+            keras.backend.get_session().run(tf.initialize_all_variables())
             models[i].fit(x, y, batch_size=batch_size, \
         nb_epoch=nb_epoch, verbose=1, validation_data=(x_valid, y_valid))
-            util.save_model(models[i], sys.argv[1]+'_'+str(im_rows)+'_'+str(i))
+
+            if sys.argv[1] == "load":
+                name = sys.argv[2]
+            else:
+                name = sys.argv[1]+'_'+str(im_rows)
+            util.save_model(models[i], name+'_'+str(i))
 
         softmax = models[i].predict(x_valid, batch_size=128, verbose=1)
+
+        top1 = 0
+        for j in range(len(y_valid)):
+            if np.argmax(y_valid[j]) == np.argmax(softmax[j]):
+                top1 += 1
+        top1 /= float(len(y_valid))
+        print 'Single top 1 accuracy: {}'.format(top1)
 
         for j in range(len(y_valid)):
             predictions[j, np.argmax(softmax[j])] += 1
@@ -84,8 +100,7 @@ def main():
         if np.argmax(y_valid[i]) == np.argmax(predictions[i, :]):
             top1 += 1
     top1 /= float(len(y_valid))
-    print 'Final top 1 accuracy: {}, rows: {} cols: {} epoch: {}'\
-            .format(top1, im_rows, im_cols, nb_epoch)
+    print 'Final top 1 accuracy: {}'.format(top1)
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
