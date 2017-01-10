@@ -13,7 +13,6 @@ import numpy as np
 
 def main():
 
-    trials = 200            # number of images to take from each class, max 2k
     winSize = (64, 128)     # window size, align to block size and stride
     blockSize = (16,16)     # 2x2 cells - used for normalization, align to cell size
     blockStride = (8,8)     # must be a multiple of cell size
@@ -38,7 +37,14 @@ def main():
     locations = ((10,20),) # not sure about these parameters
         
     # read images from folder
+    trials = 200
     images = []
+    
+    
+    testtrials = 200         # number of images to take from each class, max 2k
+    testimages = []
+    
+    cumulative = trials + testtrials
     
     # take 200 uimages from each class to train SVM
     for x in range(0, 10):
@@ -46,13 +52,18 @@ def main():
         folder = "/Users/Kush/python/hog/imgs/train/c" + str(x)
         for fn in os.listdir(folder):
             img = cv2.imread(os.path.join(folder,fn))
-            if img is not None:
-                images.append(img)
+            if count < trials:
+                if img is not None:
+                    images.append(img)
+                    count += 1
+            else: #test images loaded
+                testimages.append(img)
                 count += 1
-                if (count > (trials - 1)):
-                    break   
+                if (count > (cumulative - 1)):
+                    break
     
     length = len(images)
+    
 #    assert (length == 10*trials)
     hogmatrix = np.float32(np.zeros(shape=(length,3780)))
     count = 0
@@ -73,19 +84,6 @@ def main():
     svm.train(hogmatrix,responses, params=svm_params)
 ##    svm.train_auto(trainData, responses) # train using optimal parameters
 
-    # testing
-    testtrials = 200
-    testimages = []
-    count = 0
-    folder = "/Users/Kush/python/hog/imgs/test"
-    for fn in os.listdir(folder):
-        img = cv2.imread(os.path.join(folder,fn))
-        if img is not None:
-            testimages.append(img)
-            count += 1
-            if (count > (testtrials - 1)):
-                break
-    
     length = len(testimages)
     
     testmatrix = np.float32(np.zeros(shape=(length,3780)))
@@ -96,12 +94,12 @@ def main():
         count += 1
     
     result = svm.predict_all(testmatrix)
-#    truth = 
-#    
-#    # check accuracy - code taken from tutorial
-#    accuracy = (result==truth)
-#    correct = np.count_nonzero(accuracy)
-#    print (correct*100.0/result.size)
+    truth = responses.reshape(2000,1) # NOT ALWAYS TRUE, CHANGE!
+    
+    # check accuracy - code taken from tutorial
+    accuracy = (result==truth)
+    correct = np.count_nonzero(accuracy)
+    print (correct*100.0/result.size)
     
     # main program starts here
 main()
