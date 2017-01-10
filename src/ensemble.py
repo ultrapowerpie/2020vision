@@ -6,6 +6,7 @@ import tensorflow as tf
 import keras
 
 from sklearn.metrics import log_loss
+from sklearn.neighbors import KNeighborsClassifier
 
 random.seed(20)
 
@@ -25,6 +26,7 @@ def main():
     validation_size    = 2          # 26 total drivers
     nb_models          = 10
     dropout            = 0
+    n_neighbors        = 5          # Number of neighbors for KNN
 
     train_data, train_target, driver_id, _ = util.load_train_data(im_rows,
                                                 im_cols, colors)
@@ -45,6 +47,7 @@ def main():
 
     models = []
     predictions = np.zeros((len(y_valid), 10))
+    raw_predictions = np.zeros((len(y_valid), 10))
     for i in range(nb_models):
 
         if sys.argv[1] == "load":
@@ -83,6 +86,22 @@ def main():
                 name = sys.argv[1]+'_'+str(im_rows)
             util.save_model(models[i], name+'_'+str(i))
 
+
+        # shuffle the training data and remove dropout proportion
+        x = [x_train[j,:,:,:] for j in range(x_train.shape[0])]
+        y = [y_train[j,:] for j in range(y_train.shape[0])]
+        xy = zip(x, y)
+        random.shuffle(xy)
+        xy = xy[int(len(xy)*dropout):]
+        x, y = zip(*xy)
+        x = np.asarray(x)
+        y = np.asarray(y)
+
+        interm_layer_model = util.build_interm_model(models[i])
+        interm_train = interm_layer_model.predict(x, batch_size=batch_size, verbose=1)
+        knn = KNeighborsClassifier(n_neighbors=n_neighbors)
+        knn.fit(interm_train, y)
+
         softmax = models[i].predict(x_valid, batch_size=128, verbose=1)
 
         top1 = 0
@@ -92,15 +111,26 @@ def main():
         top1 /= float(len(y_valid))
         print 'Single top 1 accuracy: {}'.format(top1)
 
+        interm_valid = interm_layer_model.predict(x_valid, batch_size=128, verbose=1)
+        knn_predictions = knn.predict(interm_valid)
+
         for j in range(len(y_valid)):
-            predictions[j, np.argmax(softmax[j])] += 1
+            predictions[j, np.argmax(knn_predictions[j])] += 1
+            raw_predictions[j, np.argmax(softmax[j])] += 1
 
     top1 = 0
     for i in range(len(y_valid)):
         if np.argmax(y_valid[i]) == np.argmax(predictions[i, :]):
             top1 += 1
     top1 /= float(len(y_valid))
-    print 'Final top 1 accuracy: {}'.format(top1)
+    print 'KNN top 1 accuracy: {}'.format(top1)
+
+    raw_top1 = 0
+    for i in range(len(y_valid)):
+        if np.argmax(y_valid[i]) == np.argmax(raw_predictions[i, :]):
+            raw_top1 += 1
+    raw_top1 /= float(len(y_valid))
+    print 'Raw top 1 accuracy: {}'.format(raw_top1)
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
