@@ -18,17 +18,22 @@ nb_drivers = len(drivers_list)
 random.shuffle(drivers_list)
 
 def main():
-    im_rows, im_cols   = 128, 128
+    im_rows, im_cols   = 64, 64
     batch_size         = 64
-    nb_epoch           = 30
+    nb_epoch           = 5
     random_state       = 51
     colors             = 1
     validation_size    = 2          # 26 total drivers
-    nb_models          = 10
+    nb_models          = 4
     dropout            = 0
     n_neighbors        = 5          # Number of neighbors for KNN
+    binary             = True
 
-    train_data, train_target, driver_id, _ = util.load_train_data(im_rows,
+    if binary:
+        train_data, train_target, driver_id, _ = util.load_train_data_binary( \
+                                                im_rows, im_cols, colors)
+    else:
+        train_data, train_target, driver_id, _ = util.load_train_data(im_rows,
                                                 im_cols, colors)
 
     drivers_list_train = drivers_list[0:nb_drivers-validation_size]
@@ -53,6 +58,8 @@ def main():
         if sys.argv[1] == "load":
             if len(sys.argv) < 3:
                 print "Please enter the name of the model to load"
+            elif binary:
+                models.append(util.read_model(sys.argv[2]+'_'+str(i)+'_b'))
             else:
                 models.append(util.read_model(sys.argv[2]+'_'+str(i)))
         elif sys.argv[1] == "basic_v1":
@@ -84,23 +91,25 @@ def main():
                 name = sys.argv[2]
             else:
                 name = sys.argv[1]+'_'+str(im_rows)
-            util.save_model(models[i], name+'_'+str(i))
-
+            if binary:
+                util.save_model(models[i], name+'_'+str(i)+'_b')
+            else:
+                util.save_model(models[i], name+'_'+str(i))
 
         # shuffle the training data and remove dropout proportion
-        x = [x_train[j,:,:,:] for j in range(x_train.shape[0])]
-        y = [y_train[j,:] for j in range(y_train.shape[0])]
-        xy = zip(x, y)
-        random.shuffle(xy)
-        xy = xy[int(len(xy)*dropout):]
-        x, y = zip(*xy)
-        x = np.asarray(x)
-        y = np.asarray(y)
-
-        interm_layer_model = util.build_interm_model(models[i])
-        interm_train = interm_layer_model.predict(x, batch_size=batch_size, verbose=1)
-        knn = KNeighborsClassifier(n_neighbors=n_neighbors)
-        knn.fit(interm_train, y)
+        # x = [x_train[j,:,:,:] for j in range(x_train.shape[0])]
+        # y = [y_train[j,:] for j in range(y_train.shape[0])]
+        # xy = zip(x, y)
+        # random.shuffle(xy)
+        # xy = xy[int(len(xy)*dropout):]
+        # x, y = zip(*xy)
+        # x = np.asarray(x)
+        # y = np.asarray(y)
+        #
+        # interm_layer_model = util.build_interm_model(models[i])
+        # interm_train = interm_layer_model.predict(x, batch_size=batch_size, verbose=1)
+        # knn = KNeighborsClassifier(n_neighbors=n_neighbors)
+        # knn.fit(interm_train, y)
 
         softmax = models[i].predict(x_valid, batch_size=128, verbose=1)
 
@@ -111,19 +120,19 @@ def main():
         top1 /= float(len(y_valid))
         print 'Single top 1 accuracy: {}'.format(top1)
 
-        interm_valid = interm_layer_model.predict(x_valid, batch_size=128, verbose=1)
-        knn_predictions = knn.predict(interm_valid)
+        # interm_valid = interm_layer_model.predict(x_valid, batch_size=128, verbose=1)
+        # knn_predictions = knn.predict(interm_valid)
 
         for j in range(len(y_valid)):
-            predictions[j, np.argmax(knn_predictions[j])] += 1
+            # predictions[j, np.argmax(knn_predictions[j])] += 1
             raw_predictions[j, np.argmax(softmax[j])] += 1
 
-    top1 = 0
-    for i in range(len(y_valid)):
-        if np.argmax(y_valid[i]) == np.argmax(predictions[i, :]):
-            top1 += 1
-    top1 /= float(len(y_valid))
-    print 'KNN top 1 accuracy: {}'.format(top1)
+    # top1 = 0
+    # for i in range(len(y_valid)):
+    #     if np.argmax(y_valid[i]) == np.argmax(predictions[i, :]):
+    #         top1 += 1
+    # top1 /= float(len(y_valid))
+    # print 'KNN top 1 accuracy: {}'.format(top1)
 
     raw_top1 = 0
     for i in range(len(y_valid)):

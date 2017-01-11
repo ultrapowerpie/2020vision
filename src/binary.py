@@ -20,19 +20,14 @@ random.shuffle(drivers_list)
 def main():
     im_rows, im_cols   = 64, 64
     batch_size         = 64
-    nb_epoch           = 20
+    nb_epoch           = 50
     random_state       = 51
     colors             = 1
     validation_size    = 2          # 26 total drivers
     n_neighbors        = 5          # Number of neighbors for KNN
-    binary             = True
 
-    if binary:
-        train_data, train_target, driver_id, _ = util.load_train_data_binary(\
-                                                    im_rows, im_cols, colors)
-    else:
-        train_data, train_target, driver_id, _ = util.load_train_data(im_rows, \
-                                                    im_cols, colors)
+    train_data, train_target, driver_id, _ = util.load_train_data(im_rows,
+                                                im_cols, colors)
 
     drivers_list_train = drivers_list[0:nb_drivers-validation_size]
 
@@ -41,7 +36,7 @@ def main():
 
     drivers_list_valid = drivers_list[nb_drivers-validation_size:nb_drivers]
 
-    x_valid, y_valid, _ = util.copy_selected_drivers(train_data, \
+    x_valid, y_valid, test_index = util.copy_selected_drivers(train_data, \
                                     train_target, driver_id, drivers_list_valid)
 
     print 'Train: {}    Valid: {}'.format(len(x_train), len(x_valid))
@@ -51,8 +46,6 @@ def main():
     if sys.argv[1] == "load":
         if len(sys.argv < 3):
             print "Please enter the name of the model to load"
-        elif binary:
-            model = util.read_model(sys.argv[2]+'b')
         else:
             model = util.read_model(sys.argv[2])
     elif sys.argv[1] == "basic_v1":
@@ -68,11 +61,7 @@ def main():
         keras.backend.get_session().run(tf.initialize_all_variables())
         model.fit(x_train, y_train, batch_size=batch_size, nb_epoch=nb_epoch, \
             verbose=1, validation_data=(x_valid, y_valid))
-
-        if binary:
-            util.save_model(model, sys.argv[1]+'_'+str(im_rows)+'b')
-        else:
-            util.save_model(model, sys.argv[1]+'_'+str(im_rows))
+        util.save_model(model, sys.argv[1]+'_'+str(im_rows))
 
     score = model.evaluate(x_valid, y_valid, verbose=0)
     predictions_valid = model.predict(x_valid, batch_size=128, verbose=1)

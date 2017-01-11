@@ -1,5 +1,6 @@
 import numpy as np
 import math
+import keras
 
 from keras.models import Model
 from keras.layers import Dense, Input, BatchNormalization, Activation, Flatten, Dropout, merge
@@ -102,7 +103,7 @@ def Fancy_Net_v2(im_rows, im_cols, colors):
     im_input = Input(shape=(im_rows, im_cols, colors))
 
     channels = int(im_rows/4)
-    iterations = 3
+    iterations = 2
 
     x = _add_conv(im_input, channels, (3, 3), subsample=(2, 2))
 
@@ -126,13 +127,14 @@ def Fancy_Net_v2(im_rows, im_cols, colors):
 
         x = merge([x, residual], mode='sum')
 
-        channels *= 2
+
+    channels *= 2
 
     x = _add_bn_act(x)
     x = _add_conv_bn_act(x, channels, subsample=(2, 2))
 
     x = GlobalAveragePooling2D(name='avg_pool')(x)
-    x = Dense(10, activation='softmax', name='predictions')(x)
+    x = Dense(2, activation='softmax', name='predictions')(x)
 
     # Create model
     model = Model(im_input, x)

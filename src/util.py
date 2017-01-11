@@ -64,26 +64,35 @@ def load_train(im_rows, im_cols, colors=1):
     print unique_drivers
     return x_train, y_train, driver_id, unique_drivers
 
+def load_train_binary(im_rows, im_cols, colors=1):
+    print 'Reading training images...'
 
-def load_test(im_rows, im_cols, colors=1):
-    print 'Reading testing images...'
+    x_train = []
+    y_train = []
+    driver_id = []
+    driver_data = get_driver_data()
 
-    path = os.path.join('static_data', 'input', 'test', '*.jpg')
-    files = glob.glob(path)
-    random.shuffle(files)
+    for j in range(10):
+        k = 1
+        if j == 0:
+            k = 0
+        print 'Loading folder c{}...'.format(j)
+        path = os.path.join('static_data', 'input', 'train', 'c' + str(j), '*.jpg')
+        files = glob.glob(path)
 
-    x_test = []
-    x_test_id = []
+        for i, f in enumerate(tqdm(files)):
+            if i > train_limit:
+                break
+            base = os.path.basename(f)
+            img = get_im_cv2(f, im_rows, im_cols, colors)
+            x_train.append(img)
+            y_train.append(k)
+            driver_id.append(driver_data[base])
 
-    for i, f in enumerate(tqdm(files)):
-        if i > test_limit:
-            break
-        base = os.path.basename(f)
-        img = get_im_cv2(f, im_rows, im_cols, colors)
-        x_test.append(img)
-        x_test_id.append(base)
-
-    return x_test, x_test_id
+    unique_drivers = sorted(list(set(driver_id)))
+    print 'Unique drivers: {}'.format(len(unique_drivers))
+    print unique_drivers
+    return x_train, y_train, driver_id, unique_drivers
 
 def cache_data(data, path):
     if os.path.isdir(os.path.dirname(path)):
@@ -129,22 +138,23 @@ def load_train_data(im_rows, im_cols, colors=1, use_cache=True):
 
     return train_data, train_target, driver_id, unique_drivers
 
-
-def load_test_data(im_rows, im_cols, colors=1, use_cache=True):
-    cache_path = os.path.join('cache', 'test_r_' + str(im_rows) + '_c_' + str(im_cols) + '_t_' + str(colors) + '.dat')
+def load_train_data_binary(im_rows, im_cols, colors=1, use_cache=True):
+    cache_path = os.path.join('cache', 'train_r_b_' + str(im_rows) + '_c_' + str(im_cols) + '_t_' + str(colors) + '.dat')
     if os.path.isfile(cache_path) and use_cache:
-        print('Restoring testing from cache...')
-        (test_data, test_id) = restore_data(cache_path)
+        print('Restoring training data from cache...')
+        (train_data, train_target, driver_id, unique_drivers) = restore_data(cache_path)
     else:
-        test_data, test_id = load_test(im_rows, im_cols, colors)
-        cache_data((test_data, test_id), cache_path)
+        train_data, train_target, driver_id, unique_drivers = load_train_binary(im_rows, im_cols, colors)
+        cache_data((train_data, train_target, driver_id, unique_drivers), cache_path)
 
-    test_data = normalize_data(test_data, im_rows, im_cols, colors)
+    train_data = normalize_data(train_data, im_rows, im_cols, colors)
 
-    print ('Test shape:', test_data.shape)
+    train_target = np.array(train_target, dtype=np.uint8)
+    train_target = np_utils.to_categorical(train_target, 2)
 
-    return test_data, test_id
+    print 'Train shape: {}'.format(train_data.shape)
 
+    return train_data, train_target, driver_id, unique_drivers
 
 def copy_selected_drivers(train_data, train_target, driver_id, driver_list):
     data = []
