@@ -5,11 +5,13 @@ from keras.layers.convolutional import Convolution2D, MaxPooling2D, AveragePooli
 from keras.layers.normalization import BatchNormalization
 from keras.optimizers import SGD
 
+drop = 0.5
+
 def Basic_Net_v1(im_rows, im_cols, colors):
     '''.
     Input: rowsxcolx1 image
-    Training: should take 10-15 epochs and ~15 minutes to train,
-              and should be able to achieve a cross-entropy loss of < 1.0
+    Training: should take 10-15 epochs and ~15 minutes to train for a 64x64
+              image, and should be able to achieve a cross-entropy loss of < 1.0
 
     @im_rows, @im_cols = the number of rows and columns in the input image
     @colors            = the number of color channels in the image (1 or 3)
@@ -19,22 +21,22 @@ def Basic_Net_v1(im_rows, im_cols, colors):
                             input_shape=(im_rows, im_cols, colors)))
     model.add(BatchNormalization())
     model.add(Activation('relu'))
-    # model.add(Dropout(0.5))
+    model.add(Dropout(0.5))
 
     model.add(Convolution2D(32, 3, 3,  subsample=(2,2), border_mode='same'))
     model.add(BatchNormalization())
     model.add(Activation('relu'))
-    # model.add(Dropout(0.5))
+    model.add(Dropout(0.5))
 
     model.add(Convolution2D(64, 3, 3, subsample=(2,2), border_mode='same'))
     model.add(BatchNormalization())
     model.add(Activation('relu'))
-    # model.add(Dropout(0.5))
+    model.add(Dropout(0.5))
 
     model.add(Convolution2D(64, 3, 3, subsample=(2,2), border_mode='same'))
     model.add(BatchNormalization())
     model.add(Activation('relu'))
-    # model.add(Dropout(0.5))
+    model.add(Dropout(0.5))
 
     model.add(Flatten())
 

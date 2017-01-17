@@ -22,10 +22,10 @@ def main():
     batch_size         = 64
     nb_epoch           = 20
     random_state       = 51
-    colors             = 1
+    colors             = 3
     validation_size    = 2          # 26 total drivers
     n_neighbors        = 5          # Number of neighbors for KNN
-    binary             = True
+    binary             = False
 
     if binary:
         train_data, train_target, driver_id, _ = util.load_train_data_binary(\
@@ -49,10 +49,8 @@ def main():
     print 'Test drivers: {}'.format(drivers_list_valid)
 
     if sys.argv[1] == "load":
-        if len(sys.argv < 3):
+        if len(sys.argv) < 3:
             print "Please enter the name of the model to load"
-        elif binary:
-            model = util.read_model(sys.argv[2]+'b')
         else:
             model = util.read_model(sys.argv[2])
     elif sys.argv[1] == "basic_v1":
@@ -64,15 +62,22 @@ def main():
     elif sys.argv[1] == "fancy_v2":
         model = fancy_net.Fancy_Net_v2(im_rows, im_cols, colors)
 
-    if sys.argv[1] != "load":
+    if (sys.argv[1] != "load") or \
+    ((len(sys.argv) > 3) and sys.argv[3] == "train"):
+
         keras.backend.get_session().run(tf.initialize_all_variables())
         model.fit(x_train, y_train, batch_size=batch_size, nb_epoch=nb_epoch, \
             verbose=1, validation_data=(x_valid, y_valid))
 
-        if binary:
-            util.save_model(model, sys.argv[1]+'_'+str(im_rows)+'b')
+        if sys.argv[1] == "load":
+            name = sys.argv[2]
         else:
-            util.save_model(model, sys.argv[1]+'_'+str(im_rows))
+            name = sys.argv[1]+'_'+str(im_rows)+'_'+str(colors)
+
+        if binary:
+            util.save_model(model, name+'_b')
+        else:
+            util.save_model(model, name)
 
     score = model.evaluate(x_valid, y_valid, verbose=0)
     predictions_valid = model.predict(x_valid, batch_size=128, verbose=1)

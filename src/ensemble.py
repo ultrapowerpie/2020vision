@@ -27,7 +27,7 @@ def main():
     nb_models          = 4
     dropout            = 0
     n_neighbors        = 5          # Number of neighbors for KNN
-    binary             = True
+    binary             = False
 
     if binary:
         train_data, train_target, driver_id, _ = util.load_train_data_binary( \
@@ -95,21 +95,6 @@ def main():
                 util.save_model(models[i], name+'_'+str(i)+'_b')
             else:
                 util.save_model(models[i], name+'_'+str(i))
-
-        # shuffle the training data and remove dropout proportion
-        # x = [x_train[j,:,:,:] for j in range(x_train.shape[0])]
-        # y = [y_train[j,:] for j in range(y_train.shape[0])]
-        # xy = zip(x, y)
-        # random.shuffle(xy)
-        # xy = xy[int(len(xy)*dropout):]
-        # x, y = zip(*xy)
-        # x = np.asarray(x)
-        # y = np.asarray(y)
-        #
-        # interm_layer_model = util.build_interm_model(models[i])
-        # interm_train = interm_layer_model.predict(x, batch_size=batch_size, verbose=1)
-        # knn = KNeighborsClassifier(n_neighbors=n_neighbors)
-        # knn.fit(interm_train, y)
 
         softmax = models[i].predict(x_valid, batch_size=128, verbose=1)
 

@@ -1,6 +1,5 @@
 import numpy as np
 import math
-import keras
 
 from keras.models import Model
 from keras.layers import Dense, Input, BatchNormalization, Activation, Flatten, Dropout, merge
@@ -72,7 +71,7 @@ def Fancy_Net_v1(im_rows, im_cols, colors):
 
         x = merge([x, residual], mode='sum')
 
-        # channels *= 2
+    channels *= 2
 
     x = Activation('relu')(x)
     x = Dropout(drop)(x)
@@ -122,11 +121,11 @@ def Fancy_Net_v2(im_rows, im_cols, colors):
         residual = _add_conv(x, channels, (1, 1), subsample=(2, 2))
 
         x = _add_bn_act(x)
+
         x = _add_conv_bn_act(x, channels)
         x = _add_conv(x, channels, (3, 3), subsample=(2, 2))
 
         x = merge([x, residual], mode='sum')
-
 
     channels *= 2
 

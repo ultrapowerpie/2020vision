@@ -5,13 +5,14 @@ import numpy as np
 from keras.utils import np_utils
 from keras.models import model_from_json, Model
 from keras.optimizers import SGD
+from sklearn.metrics import log_loss
+from sklearn.neighbors import KNeighborsClassifier
 
 import basic_net, fancy_net
 import util
 import tensorflow as tf
 import keras
 
-nb_models = 1
 im_cols, im_rows = 64, 64
 
 binary = True
@@ -31,33 +32,33 @@ else:
 
 p = vlc.MediaPlayer('static_data/beep-02.mp3')
 
-models = []
-for i in range(nb_models):
-    if binary:
-        models.append(util.read_model(sys.argv[1]+'_'+str(i)+'_b'))
-    else:
-        models.append(util.read_model(sys.argv[1]+'_'+str(i)))
+model = util.read_model(sys.argv[1])
+
+# K-Nearest Neighbors
+# interm_layer_model = util.build_interm_model(model)
+# interm_train = interm_layer_model.predict(x_train, verbose=1)
+#
+# knn = KNeighborsClassifier(n_neighbors=n_neighbors)
+# knn.fit(interm_train, y_train)
 
 last5 = 0
 start = time.time()
-while rval:
 
+while rval:
     cv2.imshow("preview", frame)
     rval, frame = vc.read()
 
-    gray_image = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    resized = cv2.resize(gray_image, (im_cols, im_rows))
+    resized = cv2.resize(frame, (im_cols, im_rows))
 
-    cv2.imshow("grayscale", resized)
+    cv2.imshow("preview2", resized)
 
-    x = np.resize(resized, (1, im_cols, im_rows, 1))
+    x = np.resize(resized, (1, im_cols, im_rows, 3))
 
-    predictions = np.zeros(cats)
-    for i in range(nb_models):
-         softmax = models[i].predict(x)
-         predictions[np.argmax(softmax)] += 1
-
-    category = np.argmax(predictions)
+    #  interm_valid = interm_layer_model.predict(x)
+    #  knn_prediction = knn.predict(interm_valid)
+    #  category = np.argmax(knn_prediction)
+    softmax = model.predict(x)
+    category = np.argmax(softmax)
 
     if (category == 0) and (last5 < 5):
         last5 += 1
