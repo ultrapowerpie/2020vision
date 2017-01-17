@@ -27,9 +27,6 @@ def main():
     hog = cv2.HOGDescriptor(winSize,blockSize,blockStride,cellSize,nbins,derivAperture,winSigma,
                         histogramNormType,L2HysThreshold,gammaCorrection,nlevels)
     
-#    image = cv2.imread("test.jpg",0) # my test image is much bigger than 64x128
-#    image2 = cv2.imread("emma.jpg",0)
-#    height, width = image2.shape
     
     #compute(img[, winStride[, padding[, locations]]]) -> descriptors
     winStride = (8,8)
@@ -37,11 +34,11 @@ def main():
     locations = ((10,20),) # not sure about these parameters
         
     # read images from folder
-    trials = 200
+    trials = 1250
     images = []
     
     
-    testtrials = 200         # number of images to take from each class, max 2k
+    testtrials = 500         # number of images to take from each class, max 2k
     testimages = []
     
     cumulative = trials + testtrials
@@ -49,6 +46,7 @@ def main():
     # take 200 uimages from each class to train SVM
     for x in range(0, 10):
         count = 0
+        # change folder depending on directory
         folder = "/Users/Kush/python/hog/imgs/train/c" + str(x)
         for fn in os.listdir(folder):
             img = cv2.imread(os.path.join(folder,fn))
@@ -64,7 +62,6 @@ def main():
     
     length = len(images)
     
-#    assert (length == 10*trials)
     hogmatrix = np.float32(np.zeros(shape=(length,3780)))
     count = 0
     for img in images:
@@ -76,13 +73,13 @@ def main():
    
     svm = cv2.SVM()
     
-    # params from tutorial I found
+    # default params from OpenCV
     svm_params = dict( kernel_type = cv2.SVM_LINEAR,
                     svm_type = cv2.SVM_C_SVC,
                     C=2.67, gamma=5.383 )
-#    
+   
     svm.train(hogmatrix,responses, params=svm_params)
-##    svm.train_auto(trainData, responses) # train using optimal parameters
+#    svm.train_auto(trainData, responses) # train using optimal parameters
 
     length = len(testimages)
     
@@ -94,7 +91,7 @@ def main():
         count += 1
     
     result = svm.predict_all(testmatrix)
-    truth = responses.reshape(2000,1) # NOT ALWAYS TRUE, CHANGE!
+    truth = np.repeat([np.arange(10)],testtrials).reshape(testtrials*10,1)
     
     # check accuracy - code taken from tutorial
     accuracy = (result==truth)
